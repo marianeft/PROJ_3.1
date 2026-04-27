@@ -1,0 +1,449 @@
+Here's the comprehensive, technically precise prompt:
+
+---
+
+## EventsManager — Full System Prompt v2.0
+
+---
+
+### System Overview
+
+Build a full-stack-ready, multi-page **Events Management Web Application** called **EventsManager**. The system serves two distinct user roles: **Admin** (authenticated, full CRUD access) and **Participant** (unauthenticated, read-only event discovery via external form redirection). All pages share a unified design system defined below. The application must be production-grade in visual fidelity and interaction design, with all dynamic behaviors implemented in vanilla JavaScript unless otherwise specified.
+
+---
+
+### Design System — Typography
+
+Load both fonts from Google Fonts via a single `<link>` tag in `<head>`.
+
+**Display / UI font:** `Plus Jakarta Sans` — weights 400, 500, 600, 700, 800. Apply to: all `<h1>`–`<h3>` headings, sidebar app name, navigation labels, stat card values, button text, table column headers, badge text, modal titles, form section titles, and card titles.
+
+**Body / data font:** `Manrope` — weights 300, 400, 500, 600, 700. Apply to: all body copy, form input values and placeholders, table cell content, metadata strings, timestamps, descriptive subtitles, tooltip text, and tag labels.
+
+Establish a typographic scale via CSS custom properties:
+- `--fs-display`: 26px / weight 800 / letter-spacing -0.5px — page titles
+- `--fs-heading`: 18px / weight 800 / letter-spacing -0.3px — card titles, modal headers
+- `--fs-subheading`: 14px / weight 700 — section labels, panel titles
+- `--fs-body`: 13px / weight 400 — primary body text
+- `--fs-small`: 11px / weight 500 — metadata, timestamps, helper text
+- `--fs-label`: 10px / weight 700 / uppercase / letter-spacing 0.8px — form labels, table headers, section dividers
+- `--fs-micro`: 9px / weight 700 / uppercase / letter-spacing 1px — badges, pills, sidebar section headers
+
+---
+
+### Design System — Color Palette
+
+Define all values as CSS custom properties on `:root`. Group by origin palette.
+
+**Arctic Depth (cool blues and greens):**
+```
+--ad-950: #0C1B2E   /* page background dark, sidebar bg */
+--ad-900: #162840   /* sidebar section bg, card surface dark */
+--ad-800: #1D3A55   /* elevated dark surface */
+--ad-600: #378ADD   /* primary interactive blue, links */
+--ad-400: #1D9E75   /* success, positive delta, synced indicator */
+--ad-200: #6EC9A8   /* light success tint */
+--ad-100: #C8E8F8   /* very light blue tint, new-event nav text */
+```
+
+**Bloom & Stone (purples and pinks):**
+```
+--bs-900: #1a1730   /* deepest purple bg */
+--bs-800: #2a2550   /* user avatar bg, dark purple surface */
+--bs-600: #7F77DD   /* PRIMARY ACCENT — active nav, buttons, focus rings */
+--bs-400: #D4537E   /* danger, alerts, unread indicators, nav badges */
+--bs-50:  #F5F0FC   /* lightest purple tint, hover bg */
+```
+
+**Semantic / Categorical:**
+```
+--amber:  #EF9F27   /* warning, amber category events */
+--coral:  #E85D24   /* coral category, high-capacity bars */
+--red-soft: rgba(224,80,80,0.08)  /* danger button hover bg */
+--red-text: #C04040              /* danger text */
+```
+
+**Light mode surface palette (applied to all pages):**
+```
+--bg:       #F2F4F8   /* page background */
+--surface:  #FFFFFF   /* primary card/panel surface */
+--surface2: #F7F8FB   /* secondary surface, input bg, table header */
+--border:   rgba(0,0,0,0.07)   /* default border */
+--border2:  rgba(0,0,0,0.13)   /* hover/active border */
+--text:     #0F1E30   /* primary text */
+--text-sec: #4A6080   /* secondary text */
+--text-dim: #98ABBE   /* placeholder, disabled, metadata */
+```
+
+**Sidebar-specific:**
+```
+--sidebar-bg:   #0C1B2E
+--sidebar-text: #C8DFF0
+--sidebar-dim:  #3D6080
+```
+
+---
+
+### Design System — Spacing & Shape
+
+```
+--radius-sm:  8px
+--radius-md:  10px
+--radius-lg:  14px
+--radius-xl:  20px
+--radius-full: 9999px
+
+--space-xs: 4px
+--space-sm: 8px
+--space-md: 14px
+--space-lg: 20px
+--space-xl: 28px
+```
+
+Shadows:
+- Cards: `box-shadow: 0 1px 4px rgba(0,0,0,0.05)`
+- Lifted cards (hover): `box-shadow: 0 8px 28px rgba(0,0,0,0.09)`
+- Floating panels (modals, dropdowns): `box-shadow: 0 12px 40px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.06)`
+- Active nav item: `box-shadow: 0 3px 14px rgba(127,119,221,0.35)`
+- Primary buttons: `box-shadow: 0 4px 16px rgba(127,119,221,0.30)`
+- Primary button hover: `box-shadow: 0 6px 22px rgba(127,119,221,0.42)`
+
+---
+
+### Design System — Animation
+
+Define these `@keyframes` globally and apply via utility classes:
+
+```css
+@keyframes fadeUp   { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+@keyframes fadeDown { from { opacity:0; transform:translateY(-12px) } to { opacity:1; transform:translateY(0) } }
+@keyframes fadeIn   { from { opacity:0 } to { opacity:1 } }
+@keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes shimmer  { from{background-position:-200% 0} to{background-position:200% 0} }
+```
+
+Stagger page-load animations using `animation-delay` increments of `0.05s` per sequential card/row. All hover transitions use `transition: all 0.17s ease`. Button hover always applies `transform: translateY(-1px)`. Active button state resets to `transform: translateY(0)`.
+
+---
+
+### Global Layout Architecture
+
+```
+body {
+  display: grid;
+  grid-template-columns: 224px 1fr;
+  min-height: 100vh;
+}
+```
+
+Left column: `.sidebar` — `position: sticky; top: 0; height: 100vh; overflow: hidden`.
+Right column: `.main` — `display: flex; flex-direction: column`.
+
+`.main` contains:
+1. `.topbar` — `position: sticky; top: 0; height: 58px; z-index: 200`
+2. `.content` — `flex: 1; overflow-y: auto; padding: var(--space-xl) var(--space-xl)`
+
+---
+
+### Sidebar Component
+
+Background: `var(--sidebar-bg)`. Right border: `1px solid rgba(55,138,221,0.08)`. Top atmospheric glow: `::before` pseudo-element with `position:absolute; top:0; left:0; right:0; height:180px; background: radial-gradient(ellipse at 50% -20%, rgba(127,119,221,0.18) 0%, transparent 70%); pointer-events:none`.
+
+**Logo area:** 34×34px rounded square (`border-radius: 9px`) with `background: linear-gradient(135deg, var(--bs-600), var(--ad-600))`, containing a calendar SVG icon in white. App name "EventsManager" in Plus Jakarta Sans 800, 15px, `#E8F4FF`, letter-spacing -0.3px. Separated from nav by `border-bottom: 1px solid rgba(255,255,255,0.05)`.
+
+**Nav items:** `display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px`. Default color `var(--sidebar-text)`. Hover: `background: rgba(255,255,255,0.06); color: #fff`. Active: `background: var(--bs-600); color: #fff; font-weight:700`. SVG icons are 16×16px with `opacity: 0.75` default, `1.0` on hover/active.
+
+**Badge counts** (event count, notification count): `background: var(--bs-400); color:#fff; font-size:9px; font-weight:700; padding:2px 6px; border-radius:9999px; margin-left:auto`. These badges must be **reactive** — event count reflects actual created events, notification count reflects unread notifications.
+
+**Section separators:** 1px horizontal rule `rgba(255,255,255,0.05)` + a 9px uppercase label in `var(--sidebar-dim)`.
+
+**"New Event" item:** distinct teal style — `background: rgba(55,138,221,0.1); border: 1px solid rgba(55,138,221,0.18); color: var(--ad-100)`.
+
+**Bottom section:** Collapse (muted, 60% opacity) + Sign Out (color `#E06060`, hover bg `rgba(224,96,96,0.1)`). Sign Out navigates to the login page.
+
+---
+
+### Topbar Component
+
+Background `var(--surface)`, `border-bottom: 1px solid var(--border)`. Contains:
+
+1. **Search input** — max-width 380px, left-aligned SVG search icon, `border-radius: 9px`, background `var(--surface2)`, focus ring `0 0 0 3px rgba(127,119,221,0.1)` with `border-color: var(--bs-600)`.
+
+2. **Synced pill** (right-aligned) — `background: rgba(29,158,117,0.08); border: 1px solid rgba(29,158,117,0.18); color: var(--ad-400)`. Contains a 6px animated pulsing dot using `@keyframes pulse`. Label "Synced". This pill must reflect **actual sync state** — label changes to "Offline" with amber color when no new data operations are pending.
+
+3. **Notification bell button** — 34×34px icon button with a pink `var(--bs-400)` unread dot. Clicking opens the Notifications floating panel. The dot is visible only when unread notifications exist.
+
+4. **User avatar chip** — 32px circle, `background: linear-gradient(135deg, var(--bs-800), var(--bs-600)); border: 2px solid var(--bs-600)`. Displays 2-letter admin initials in Plus Jakarta Sans 800.
+
+---
+
+### Page 1 — Dashboard (`events-dashboard.html`)
+
+**Page header:** "Dashboard" in `--fs-display`. Subtitle shows current date (dynamic via `new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })`). Right side: "New Event" button — `background: var(--bs-600); border-radius: var(--radius-md); box-shadow: 0 4px 16px rgba(127,119,221,0.30)`.
+
+**Stat cards row** — CSS grid `repeat(4, 1fr)`, gap 14px. Each card: white surface, 14px radius, 20px padding, flex row between left (label + value + delta) and right (icon wrap). Values: Total Events, Today's Events, Total Participants, Upcoming Events. All values must be **dynamically computed** from the application's event data store. Deltas show `+N this month` for upward trends. Icon wraps are 40×40px rounded squares with category-tinted backgrounds.
+
+**Two-column panel row** — `1fr 1fr`, gap 16px:
+- *Upcoming Events panel*: lists events with `date >= today`, sorted ascending by date. Each row: 3px colored left bar (unique color per event category), event title, time range, status pill. Status is reactive to actual event status field.
+- *Recent Events panel*: lists events with `date < today`, sorted descending. Each row: 3px colored bar, title, date, attendee count pulled from registration data.
+
+**Three-column bottom row** — `1fr 1fr 1fr`:
+- Activity feed: last 10 actions (event created, participant registered, certificate sent, etc.) with actor avatar, action description, relative timestamp (e.g., "2 min ago").
+- Ticket/registration breakdown: per-category bar chart using CSS progress bars, counts pulled from registration records.
+- Right column: QR Scanner shortcut card (dark navy gradient, purple icon) + mini 7-column calendar with event dots.
+
+---
+
+### Page 2 — Events Table (`events-list.html`)
+
+**Filters bar** (white card, 14px radius): inline search input + four `<select>` dropdowns — Category (all category values), Status (Published, Draft, Ended), Time (All, This Week, This Month, Next 30 Days), Sort (Newest First, Oldest First, Most Attendees, A–Z). All filters operate client-side on the rendered table rows using JavaScript `Array.filter()` and `Array.sort()` on a shared data array.
+
+**Data table** columns:
+1. **Event** — 8px colored dot (category color) + event name in Plus Jakarta Sans 700 + tag pills below (gray pill, 9px uppercase)
+2. **Date & Time** — primary date in 600 weight + time range in `var(--text-dim)` below
+3. **Location** — truncated to 20 chars with ellipsis
+4. **Category** — colored pill badge (Meetup: pink, Social: amber, Webinar: orange, Workshop: green, Conference: blue, Summit: purple, Gala: lavender)
+5. **Attendees** — right-aligned count + 4px tall progress bar below (bar color reflects fill level: green <70%, amber 70–90%, coral >90%)
+6. **Status** — pill (Published: green, Draft: gray, Ended: muted, Soon: blue)
+7. **Actions** — four 28×28px icon buttons: Attendees (opens attendee modal), View (opens event detail modal), Edit (opens edit form modal), Delete (opens confirmation dialog). Delete button has a red hover danger state.
+
+All table rows are `cursor:pointer` and have a subtle hover background `rgba(127,119,221,0.025)`.
+
+**Certificate Management per event row:** When the "Attendees" action button is clicked, an attendee modal opens listing all registered participants. Each participant row shows their name, email, registration number, and a "Send Certificate" button. This button triggers the certificate generation and delivery workflow described below.
+
+---
+
+### Page 3 — Calendar (`events-calendar.html`)
+
+**Controls bar:** Left — "Calendar" page title. Right — segmented view toggle (Month / Week / Day), previous/next arrow buttons (30×30px, `border-radius: 8px`), "Today" button, current month/year label in Plus Jakarta Sans 700.
+
+**Month grid:** 7-column CSS grid. Day headers in 10px uppercase `var(--text-dim)`. Each day cell: `min-height: 110px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 8px; display:flex; flex-direction:column; gap:4px`. Day number: 26×26px flex-centered span — today's date gets `background: var(--bs-600); color: white; border-radius: 50%`. Other-month days have `background: rgba(0,0,0,0.015)` and dimmed number color.
+
+**Event chips on calendar:** Render as `font-size:10px; font-weight:600; padding:2px 8px; border-radius:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis`. Colors are category-tinted (e.g., conference chip: `background:rgba(55,138,221,0.15); color:#1060A0`). Each chip is clickable, opening the event detail modal.
+
+**Event chips must be dynamically rendered** from the application data store — any newly created event immediately appears on the correct calendar date without page refresh.
+
+---
+
+### Page 4 — Settings (`events-settings.html`)
+
+Three-tab segmented control: **Account**, **Data Management**. (Installation and deployment documentation are reserved for a separate system documentation page and must be excluded from this Settings page.)
+
+**Account tab:**
+- **Change Username** section — current username display, new username input field, confirm button. On submit: validates uniqueness, updates stored credential, shows success toast.
+- **Change Password** section — current password input, new password input, confirm new password input. Validation: new password must be ≥ 8 characters, must match confirm field. On submit: verifies current password, updates stored credential, shows success toast. All password fields have a show/hide toggle button (eye icon SVG).
+- Each section is a white card with `border-radius: var(--radius-lg)`, section title in `--fs-subheading`, and a Save button styled as a primary button.
+
+**Data Management tab:**
+- Export all events → CSV download
+- Export attendee data → CSV download
+- Backup database → JSON snapshot download
+- Clear all draft events → confirmation dialog before execution
+- Reset all data → double-confirmation dialog (type "RESET" to confirm)
+
+Each row: white card, label in 600 weight, description in `var(--text-dim)` 11px, right-aligned action button. Destructive actions use the danger button style (`border-color: rgba(224,80,80,0.2); color: #C04040`).
+
+---
+
+### Feature — Certificate Management System
+
+This is a primary admin feature. It enables the admin to define reusable certificate templates, attach them to events, and dispatch personalized certificates to registered participants.
+
+**Template management UI:**
+Admin accesses a "Certificates" section (reachable from the event detail modal or a dedicated sidebar link). The certificates management view contains:
+
+1. **Template Library** — a card grid showing all saved templates. Each card previews the template thumbnail, shows the template name, associated event type tag, and action buttons (Preview, Edit, Delete, Set as Default).
+
+2. **Create / Edit Template modal** — a full-screen or large modal with two panels:
+   - *Left: Template Builder* — a rich-text or HTML template input area (use a `<textarea>` with monospace font for the MVP). The admin types or pastes an HTML certificate layout. Supported placeholder tokens displayed in a sidebar reference list:
+     - `{{participant_name}}` — resolved to each registrant's full name
+     - `{{participant_email}}` — resolved to each registrant's email
+     - `{{certificate_number}}` — resolved to a unique generated ID per participant per event (format: `EVT-{eventId}-{registrantId}-{YYYYMMDD}`)
+     - `{{event_name}}` — resolved to the event's title
+     - `{{event_date}}` — resolved to the event's formatted date
+     - `{{event_location}}` — resolved to the event's venue
+     - `{{issue_date}}` — resolved to `new Date().toLocaleDateString()`
+   - *Right: Live Preview panel* — renders the template HTML in a sandboxed `<iframe>` using `srcdoc`, with placeholder tokens substituted with sample data in real time as the admin types (use `debounce` on the textarea `input` event, 300ms delay).
+
+3. **Template input workflow:**
+   - Admin clicks "New Template" → modal opens
+   - Admin names the template (e.g., "Tech Conference Certificate")
+   - Admin selects which event category this template applies to (optional tag)
+   - Admin pastes or writes the HTML certificate body into the textarea
+   - The live preview updates in real time
+   - Admin clicks "Save Template" → template stored in `localStorage` as a JSON object: `{ id, name, categoryTag, htmlTemplate, createdAt }`
+
+4. **Google Drive integration strategy** (recommended approach for static/front-end implementation):
+   - Since direct Google Drive API access requires OAuth 2.0 and server-side credentials, recommend using **Google Apps Script Web App** as a middleware layer. The admin provides a **Google Apps Script deployment URL** in the Settings → Account tab (a dedicated "Integrations" field labeled "Google Drive Apps Script URL").
+   - When "Send Certificate" is triggered, the front end constructs the personalized certificate HTML (tokens replaced), then sends a `POST` request via `fetch()` to the Apps Script URL with a JSON body containing `{ recipientEmail, recipientName, certificateNumber, certificateHTML, eventName }`.
+   - The Apps Script receives the payload, converts the HTML to a PDF (using `DocumentApp` or `HtmlService`), saves it to a designated Google Drive folder (configurable in the Script), and emails it to the participant via `MailApp.sendEmail()` with the PDF as an attachment.
+   - Display this integration setup as a step-by-step card in Settings → Account under an "Integrations" subsection, with an input field for the Apps Script URL, a "Test Connection" button, and a green "Connected" / red "Not Connected" status indicator.
+
+5. **Send Certificate button behavior:**
+   - Located in the Attendee List modal per event, as a button on each participant row
+   - Also a bulk action "Send All Certificates" button at the top of the attendee modal
+   - On click (single): opens a small confirmation popover showing the participant's name, the resolved certificate preview link, and a "Confirm & Send" button
+   - On confirm: calls the Apps Script endpoint, shows an inline loading spinner on the row, then replaces with a green "Sent ✓" status badge and timestamps it
+   - Certificate send status per participant is persisted in `localStorage` keyed by `cert_{eventId}_{participantId}`
+   - Bulk send: iterates all unsent participants with a 300ms delay between each request to avoid rate limiting, shows an overall progress bar in the modal header
+
+---
+
+### Feature — Participant Entry via Google Form + QR Code
+
+**Rationale:** Rather than maintaining a separate participant authentication system, participants are directed to a Google Form for registration. This offloads data collection to Google's infrastructure, with form submissions feeding into a Google Sheet that the admin can connect to the system.
+
+**Implementation:**
+
+1. **Event creation flow** — When the admin creates or edits an event, the event form includes a field labeled **"Google Form Registration URL"** (text input, URL-validated). This is the full URL of the Google Form the admin has created for that event's registration.
+
+2. **QR Code generation** — Immediately upon saving an event with a valid Google Form URL, a QR code is generated client-side using the **QRCode.js** library (loaded from CDN: `https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js`). The QR code encodes the Google Form URL. It is rendered into a 200×200px `<div>` and displayed:
+   - On the event detail modal (admin view) with a "Download QR" button that triggers `canvas.toDataURL()` download as PNG
+   - On the event's public-facing card (if a public view is implemented)
+
+3. **Participant login screen behavior** — Replace the previous participant login form entirely. The participant-facing screen (Screen 2B of the login flow) now displays:
+   - The selected event's name and details
+   - A prominent **"Register via Google Form"** button styled in the teal gradient, which opens the event's stored Google Form URL in a new tab (`window.open(url, '_blank')`)
+   - Below the button: the event's QR code rendered at 180×180px with the label "Scan to register on your phone"
+   - A small helper text: "You will be redirected to an external Google Form to complete registration."
+   - No username, password, or any input field is present on this screen for participants
+
+4. **QR code in the Events table** — Each event row in the Events table includes a QR icon action button (fifth action button after Delete). Clicking it opens a small modal containing the event's QR code at 240×240px with event name, Google Form URL as a copyable text link, and a "Download PNG" button.
+
+5. **QR code on Calendar** — Clicking an event chip on the calendar opens an event detail popover that includes a small 80×80px QR thumbnail. Clicking the thumbnail opens the full QR modal.
+
+---
+
+### Feature — Real-Time Reactive Badges and Notifications
+
+**Events badge (sidebar):** The nav badge showing the event count on the "Events" nav item must reflect the current count of all stored events in real time. Implement using a central **event data store** — a JavaScript module (or `localStorage`-backed object) that dispatches a custom DOM event `eventsUpdated` whenever an event is created, edited, or deleted. All components that display event counts subscribe to this event via `document.addEventListener('eventsUpdated', updateBadgeCounts)`.
+
+**Notification system architecture:**
+- Notifications are stored as an array in `localStorage` under key `em_notifications`
+- Each notification object: `{ id, type, message, timestamp, read: false, eventId? }`
+- Notification types: `event_created`, `event_updated`, `event_deleted`, `registration_received`, `certificate_sent`, `capacity_warning` (triggered when an event reaches >90% capacity)
+- Every significant system action must push a new notification object to the array and dispatch a custom DOM event `notificationsUpdated`
+- The notification bell dot and sidebar badge count subscribe to `notificationsUpdated` and re-render the unread count
+- The Notifications floating panel re-renders its list on each `notificationsUpdated` event, showing the 10 most recent notifications sorted by timestamp descending, with unread items visually distinguished by a `var(--bs-600)` left border and a `var(--bs-400)` dot
+- Clicking a notification marks it as `read: true`, removes the dot, decrements the badge count, and (if applicable) navigates to the relevant event
+- A "Mark all as read" button in the panel header sets all to `read: true` and resets the badge to zero
+- Notification timestamps display as relative time strings ("just now", "5 min ago", "2 hr ago", "Yesterday") computed from `Date.now() - notification.timestamp`
+
+**Synced pill behavior:** The topbar "Synced" pill animates its dot at all times when the data store is consistent. When a write operation (create/edit/delete) is in progress, the label temporarily changes to "Saving…" in amber, and reverts to "Synced" in green upon completion (simulate with a 600ms `setTimeout` for localStorage writes).
+
+---
+
+### Notifications Floating Panel
+
+Position: `absolute; top: 62px; right: 16px` relative to `.topbar-right`. Dimensions: `width: 320px`. Structure:
+- Header: "Notifications" title (Plus Jakarta Sans 800, 14px) + "Mark all read" text button (right-aligned, 11px, `var(--bs-600)`) + close × button
+- Body: scrollable list, `max-height: 400px; overflow-y: auto`
+- Each item: flex row — colored 28×28px avatar (initials or icon) + body (bold actor name + action text, 12px, `var(--text-sec)`) + relative timestamp (10px, `var(--text-dim)`) + unread dot (7px, `var(--bs-600)`, right-aligned). Unread items have `border-left: 3px solid var(--bs-600); background: var(--bs-50)`
+- Empty state: centered "No notifications" in `var(--text-dim)`, 13px
+- Panel opens/closes via JS toggle. Clicking outside the panel closes it via a `document` click listener with `event.stopPropagation()` on the panel itself.
+
+---
+
+### Login Flow — Three-Screen Architecture
+
+All three screens exist in a single HTML file (`events-login.html`). Screen transitions use `display: none` / `display: block` toggling with a `fadeIn` animation class applied on show. A `currentRole` variable tracks the user's selected role across screens.
+
+**Screen 1 — Role Selection:**
+Centered card (max-width 820px, `border-radius: var(--radius-xl)`, glassmorphism: `backdrop-filter: blur(24px)`, dark navy with `rgba(17,34,58,0.78)` background). Two role cards side by side in a 2-column grid. Each card: icon wrap (66×66px rounded square, category-tinted), role title (Plus Jakarta Sans 800, 16px), description (Manrope 12px, `var(--text-muted)`), CTA arrow text. Participant card: teal hover border (`rgba(29,158,117,0.45)`). Admin card: purple hover border (`rgba(127,119,221,0.45)`). Both cards lift on hover with `transform: translateY(-3px)`.
+
+**Screen 2A — Admin Login:**
+Two-column layout (240px left band + flex-1 right form). Left band: deep purple `linear-gradient(160deg, #3C3489 0%, #1a1730 55%, #0F1623 100%)` with dot pattern overlay, back button, shield icon, title "Admin Portal", subtitle, feature bullet list. Right form: "Sign in to Dashboard" title, username input, password input (with show/hide toggle), "Forgot password?" link, gradient Sign In button, default credentials info box.
+
+On submit: validates against stored credentials in `localStorage` key `em_admin_credentials` (default: `{ username: 'admin', password: 'admin1234' }`). On success: redirects to `events-dashboard.html`. On failure: shows inline error message below the password field ("Incorrect username or password") with a red border on the input field.
+
+**Screen 2B — Participant Event Selection:**
+Two-column layout (240px teal left band + right event list). Left band: teal gradient, participants icon, "Join an Event" title, feature bullets. Right: "Select an Event" title, subtitle "Tap an event to view details and register." Scrollable list of all published events rendered dynamically from `localStorage` data store. Each event item: emoji category icon, event title, date/time/location meta, category badge, chevron arrow. Clicking advances to Screen 3 with that event's data injected.
+
+**Screen 3 — Event Detail + Registration Redirect:**
+Two-column layout. Left: back button, category badge, event name, date/time/venue info cards, capacity progress bar. Right: "Register for this Event" title, a prominent teal **"Register via Google Form →"** button (opens the event's Google Form URL in a new tab), the event's QR code rendered at 180×180px via QRCode.js, helper text "Scan to register on your phone", and a copyable link text below the QR code. No form fields on this screen.
+
+---
+
+### Data Architecture — localStorage Schema
+
+All application state is persisted to `localStorage` using the following key schema:
+
+```
+em_events          → JSON array of event objects
+em_notifications   → JSON array of notification objects
+em_admin_credentials → JSON object { username, password }
+em_certificates    → JSON array of certificate template objects
+em_registrations   → JSON array of registration objects (if not using Google Forms)
+em_settings        → JSON object { appsScriptUrl, driveFolder, defaultCertTemplate }
+```
+
+**Event object schema:**
+```json
+{
+  "id": "evt_{{uuid}}",
+  "title": "string",
+  "category": "Conference|Workshop|Meetup|Webinar|Social|Gala|Summit",
+  "status": "Draft|Published|Ended",
+  "date": "YYYY-MM-DD",
+  "timeStart": "HH:MM",
+  "timeEnd": "HH:MM",
+  "location": "string",
+  "description": "string",
+  "capacity": "number",
+  "tags": ["string"],
+  "googleFormUrl": "string|null",
+  "qrCodeDataUrl": "string|null",
+  "certificateTemplateId": "string|null",
+  "createdAt": "ISO8601",
+  "updatedAt": "ISO8601"
+}
+```
+
+**Certificate template object schema:**
+```json
+{
+  "id": "cert_{{uuid}}",
+  "name": "string",
+  "categoryTag": "string|null",
+  "htmlTemplate": "string (raw HTML with placeholder tokens)",
+  "createdAt": "ISO8601"
+}
+```
+
+**Notification object schema:**
+```json
+{
+  "id": "notif_{{uuid}}",
+  "type": "event_created|event_updated|event_deleted|registration_received|certificate_sent|capacity_warning",
+  "message": "string",
+  "eventId": "string|null",
+  "timestamp": "number (Date.now())",
+  "read": "boolean"
+}
+```
+
+---
+
+### Suggested Additional Features
+
+The following features are architecturally appropriate and recommended for a future development sprint:
+
+1. **Event Analytics Dashboard** — Per-event statistics page showing registration growth over time (rendered as an SVG sparkline or using Chart.js from CDN), peak registration hours, geographic distribution (if collected via Google Form), and certificate delivery rate.
+
+2. **Bulk Event Import via CSV** — Admin uploads a CSV file. The system parses it using the FileReader API, maps columns to event fields via a column-mapping UI, previews the parsed events in a table, and bulk-inserts on confirm.
+
+3. **Certificate Delivery Log** — Per-event log table showing all sent certificates: participant name, email, certificate number, sent timestamp, delivery status (Sent / Failed). Allows admin to resend individual failed deliveries.
+
+4. **Event Duplication** — A "Duplicate" action on each event row that clones all fields into a new Draft event with a "(Copy)" suffix on the title, allowing reuse of templates for recurring events.
+
+5. **Public Event Listing Page** — A read-only, unauthenticated page (`events-public.html`) displaying all Published events as cards with QR codes and Google Form links, embeddable as an iframe on external websites.
+
+6. **Role-Based Access Levels** — Extend the admin system to support sub-roles: Super Admin (full access), Event Manager (create/edit own events only), Viewer (read-only). Credentials and role stored in `em_admin_credentials`.
+
+7. **Automated Capacity Alerts** — When an event's registered count crosses 75% and 90% of capacity (computed from `em_registrations` or synced Google Sheet data), automatically push a `capacity_warning` notification and optionally send an email alert to the admin via the Apps Script endpoint.
+
+8. **Google Sheets Sync** — A "Sync Registrations" button per event that fetches the latest form submission data from the connected Google Sheet via the Apps Script URL, merges it into `em_registrations`, and updates the attendee count in real time.
+
+9. **Dark Mode Toggle** — A theme toggle button in the topbar that switches all CSS custom properties to a dark surface palette using `document.documentElement.setAttribute('data-theme', 'dark')` and a `:root[data-theme="dark"]` overrides block.
+
+10. **Print / PDF Export per Certificate** — In addition to email delivery, a "Download Certificate" button in the attendee row that opens the personalized certificate HTML in a new tab and triggers `window.print()` using a `@media print` stylesheet that hides all UI chrome and renders only the certificate at A4 dimensions.
